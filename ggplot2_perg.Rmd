@@ -85,7 +85,9 @@ tarantino_538 <- read_csv("https://raw.githubusercontent.com/fivethirtyeight/dat
 
 gapminder_df <- gapminder
 
-stocks <- read_csv("data/stock_data.csv")
+oecd_sum <- read_csv("https://raw.githubusercontent.com/aakosm/perg_ggplot2_workshop18/master/data/oecd_sum.csv")
+
+stocks <- read_csv("https://raw.githubusercontent.com/aakosm/perg_ggplot2_workshop18/master/data/stock_data.csv")
 ```
 
 ## 2.0 building our first ggplot
@@ -353,8 +355,6 @@ For this we will modify a chart from the [Data Visualisation textbook](http://so
 
 ```{r}
 # for the data see the github repository of the workshop
-
-load("data/oecd_sum.rda") 
 
 p <- ggplot(data = oecd_sum,
        mapping = aes(x = year, y = diff, color = hi_lo)) 
