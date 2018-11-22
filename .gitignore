@@ -26,3 +26,4 @@ vignettes/*.pdf
 rsconnect/
 .Rproj.user
 *.html
+ggplot2_perg.html
