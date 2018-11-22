@@ -19,6 +19,14 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE
 )
 ```
+# 0. Before we start... 
+...install all the packages that we will need. (if RStudio want to restart the session, just tell it 'No')
+
+```{r eval=FALSE}
+packages_needed <- c("readr", "dplyr", "ggplot2", "ggridges", "ggthemes", "gapminder", "ggraph", "tidygraph", "eurostat", "maps")
+
+install.packages(packages_needed)
+```
 
 
 # 1. Data visualisation principles
@@ -30,8 +38,6 @@ knitr::include_graphics("https://static1.squarespace.com/static/56713bf4dc5cb411
 ```
     
 *source: [Darkhorse Analytics](https://www.darkhorseanalytics.com/blog/data-looks-better-naked)*
-
-
 
 
 * avoid chart junk
@@ -68,12 +74,24 @@ knitr::include_graphics("figures/ggplot_formula.png")
 
 
 ```{r}
+# loading and shaping data
 library(readr)
 library(dplyr)
+
+# data sources
+library(gapminder)
+library(eurostat)
+library(maps)
+
+# general data visualisation
 library(ggplot2)
 library(ggridges)
 library(ggthemes)
-library(gapminder)
+
+# network related packages
+library(ggraph)
+library(tidygraph)
+
 ```
 
 
@@ -618,5 +636,184 @@ ggplot(gapminder, aes(lifeExp, gdpPercap, label = country)) + # we add the label
 # 4. Special cases
 
 ## 4.1 Network visualization
+Let's load our data from an edgelist. We are using the `tidygraph` `ggraph` packages, but both are heavily dependent on the `igraph` package which is one of the most powerful one for network analysis in R.
+
+```{r}
+# data
+edges_got <- read_csv("https://raw.githubusercontent.com/melaniewalsh/sample-social-network-datasets/master/sample-datasets/game-of-thrones/got-edges.csv")
+```
+
+
+let's create the network object and add some network statistics to our small social network
+```{r}
+soc_nw <- as_tbl_graph(edges_got, directed = FALSE) %>% 
+  activate(nodes) %>% 
+  mutate(centrality = centrality_eigen(), community = as.factor(group_infomap()))
+```
+
+
+We plot the network with the `ggraph()` function, that is a network oriented extension of `ggplot2`. The nodes and links are plotted separately with the `geom_edge_*` and `geom_node_*`. In this case `link` and `point`.
+```{r}
+ggraph(soc_nw, layout = "kk") +
+  geom_edge_link(alpha = 0.35) +
+  geom_node_point()
+```
+
+alternative with modifications to link and node attributes. Note the `theme_graph()` at the end.
+```{r}
+ggraph(soc_nw, layout = "fr") +
+  geom_edge_link(aes(width = Weight), alpha = 0.2) +
+  scale_edge_width(range = c(0.5,2)) +
+  geom_node_point(aes(size = centrality), alpha = 0.8) +
+  theme_graph()
+```
+
+final touch, let's add the communities in the network and labels for our nodes.
+
+```{r}
+ggraph(soc_nw, layout = "fr") +
+  geom_edge_link(aes(width = Weight), alpha = 0.2) +
+  scale_edge_width(range = c(0.5,1.5)) +
+  geom_node_point(aes(size = centrality, color = community), alpha = 0.8) +
+  geom_node_text(aes(label = name), size = 3, repel = TRUE) +
+  scale_color_brewer(palette = "Set2") +
+  labs(title = "Social network of the Song of Ice and Fire books",
+       caption = "Data: <github.com/melaniewalsh/sample-social-network-datasets>") +
+  theme_graph()
+
+```
+
 
 ## 4.2 Maps
+Two essential parts of creating a map with `ggplot2`:
+- shapefile which draws the map
+- some data that we want to plot over the map
+
+Getting the map data from the `maps` package
+```{r}
+world <- map_data("world")
+```
+
+
+We can plot the empty map 
+```{r}
+ggplot(data = world,
+       mapping = aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", color = "black") +
+  coord_cartesian()
+```
+
+
+We can also subset the map data, just as we can with any other R object
+```{r}
+# subsetting the world data
+world_subset <- world[world$region == "France",]
+
+ggplot(data = world_subset,
+       mapping = aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", color = "black") +
+  coord_cartesian()
+```
+
+
+
+
+adding data to our map. If you are not familiar with the `dplyr` package, it is one of the better data wrangling solutions out there. We subset our gapminder data for the year 1977. Then add a new row that matches the region variable in the map data so we can merge the two dataset. (we also get rid of Antarctica, because of aesthetics)
+
+```{r}
+year_2000 <- gapminder_df %>% 
+  filter(year == 1977) %>% 
+  mutate(country = as.character(country))
+
+# adding key variable for merge
+year_2000$region <- year_2000$country
+
+# merging the data and the map and getting rid of antarctica
+world_data <- left_join(world, year_2000, by = "region") %>% 
+  filter(region != "Antarctica")
+```
+
+And now we can plot the map and data with the `geom_polygon()` and `coord_quickmap()`. I also made some modifications to the theme, so it looks better.
+```{r}
+ggplot(world_data, aes(long, lat, group = group, fill = lifeExp)) +
+  geom_polygon(color = "gray90", size = 0.05 ) +
+  coord_quickmap() +
+  labs(fill = "Life expectancy",
+       title = "Life expectancy around the world",
+       subtitle = "1977",
+       caption = "Data: Gapminder") +
+  scale_fill_viridis_c(na.value = "white", direction = -1) +
+  theme_bw() +
+  theme(axis.line=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid=element_blank(),
+        panel.spacing=unit(0, "lines"),
+        plot.background=element_blank(),
+        legend.justification = c(0,0),
+        legend.position = c(0,0)
+  )
+
+```
+
+
+
+
+
+### 4.2.1 example from the Eurostat package
+
+The [vignette](https://ropengov.github.io/eurostat/articles/eurostat_tutorial.html#maps) contains the full tutorial on how to use the eurostat package to get data through the eurostat API. If you are interested check it out later.
+
+We get the data, which is disposable household income data for NUTS2 regions. We merge it with the shapefile, that we have in the `geodata` object.
+```{r}
+dat <- get_eurostat("tgs00026", time_format = "raw", stringsAsFactors = FALSE) %>% 
+  # subsetting to year 2014 and NUTS-2 level
+  dplyr::filter(time == 2014, nchar(geo) == 4) %>% 
+  # classifying the values the variable
+  dplyr::mutate(cat = cut_to_classes(values))
+
+
+# Download geospatial data from GISCO
+geodata <- get_eurostat_geospatial(resolution = "60", nuts_level = "2")
+
+# merge with attribute data with geodat
+map_data <- inner_join(geodata, dat)
+
+```
+
+plotting with the `coord_sf`
+```{r}
+ggplot(data=map_data) + 
+  geom_sf(aes(fill=cat),color="dim grey", size=.1) + 
+  scale_fill_brewer(palette = "Oranges") +
+  guides(fill = guide_legend(reverse=T, title = "euro")) +
+  labs(title="Disposable household income in 2014",
+       caption="(C) EuroGeographics for the administrative boundaries 
+       Map produced in R with a help from Eurostat-package <github.com/ropengov/eurostat/>") +
+  theme_light() + 
+  theme(legend.position=c(.8,.8)) +
+  coord_sf(xlim=c(-12,44), ylim=c(35,70))
+
+```
+
+If we want to add arbitrary points to the map, we can do that by specifying the longitudinal and latitudinal coordinates.
+
+```{r}
+long <- c(10)
+lat <- c(50)
+my_city <- as.data.frame(cbind(long,lat))
+```
+
+
+Then just plot over our map with the `geom_point()`
+
+```{r}
+ggplot(data=map_data) + 
+  geom_sf(fill= "white", color="dim grey", size=.1) + 
+  geom_point(data = my_city, aes(x = long, y = lat), color = "orange", size = 5, alpha = 0.7) +
+  theme_light() +
+  coord_sf(xlim=c(-12,44), ylim=c(35,70))
+```
