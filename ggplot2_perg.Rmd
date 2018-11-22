@@ -56,10 +56,11 @@ knitr::include_graphics("https://media.giphy.com/media/12XMGIWtrHBl5e/giphy.gif"
 ```
 
 > Resources:
-> Some examples in this workshop are adapted from the great [Data Visualization - A practical introduction](http://socviz.co/) from Kieran Healey.
-> More on dataviz theory and best practice: [Fundamentals of Data Visualization](https://serialmentor.com/dataviz/) by Claus O. Wilke
-> [ggplot2 cheat sheet](https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf)
-> [list of ggplot2 extensions](https://www.ggplot2-exts.org/)
+
+- Some examples in this workshop are adapted from the great [Data Visualization - A practical introduction](http://socviz.co/) from Kieran Healey.
+- More on dataviz theory and best practice: [Fundamentals of Data Visualization](https://serialmentor.com/dataviz/) by Claus O. Wilke
+- [ggplot2 cheat sheet](https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf)
+- [list of ggplot2 extensions](https://www.ggplot2-exts.org/)
 
   
 # 2. `ggplot2` and its extensions
