@@ -1,5 +1,3 @@
-# PERG ggplot2 workshop repository
+# ggplot2 workshop
 
-The html from the RMarkdown is accessible here: [https://aakosm.github.io/ggplot2_perg.html](https://aakosm.github.io/ggplot2_perg.html)
-
-
+Repository for the `ggplot2` workshop. A quick and accesible introduction to start creating beautiful figures in R.
